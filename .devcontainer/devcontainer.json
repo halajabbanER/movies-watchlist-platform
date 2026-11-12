@@ -1,0 +1,33 @@
+{
+  "name": "Movies Watchlist Platform",
+  "dockerComposeFile": "../docker-compose.yml",
+  "service": "app",
+  "workspaceFolder": "/workspace/${localWorkspaceFolderBasename}",
+  "shutdownAction": "stopCompose",
+  "forwardPorts": [8080, 3306, 5173],
+  "portsAttributes": {
+    "8080": { "label": "Spring Boot application", "onAutoForward": "notify" },
+    "3306": { "label": "MySQL", "onAutoForward": "silent" },
+    "5173": { "label": "React development server", "onAutoForward": "notify" }
+  },
+  "features": {
+    "ghcr.io/devcontainers/features/node:1": {
+      "version": "22"
+    }
+  },
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "vscjava.vscode-java-pack",
+        "vmware.vscode-spring-boot",
+        "vmware.vscode-spring-initializr",
+        "GabrielBB.vscode-lombok"
+      ],
+      "settings": {
+        "java.configuration.updateBuildConfiguration": "automatic",
+        "java.compile.nullAnalysis.mode": "disabled"
+      }
+    }
+  },
+  "remoteUser": "root"
+}
