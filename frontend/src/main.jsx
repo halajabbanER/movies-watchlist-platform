@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import ReactDOM from 'react-dom/client';
 import './styles.css';
 
@@ -35,9 +35,10 @@ async function apiRequest(url, options = {}) {
 
 function App() {
   const [userId, setUserId] = useState(1);
-  const [activeTab, setActiveTab] = useState('watchlists'); // 'watchlists' | 'search' | 'reviews'
+  const [activeTab, setActiveTab] = useState('watchlists'); // 'watchlists' | 'search' | 'reviews' | 'community'
   const [theme, setTheme] = useState(() => localStorage.getItem('theme') || 'light');
 
+  // Theme effect
   useEffect(() => {
     document.documentElement.setAttribute('data-theme', theme);
     localStorage.setItem('theme', theme);
@@ -52,9 +53,15 @@ function App() {
   const [selectedList, setSelectedList] = useState(null);
   const [items, setItems] = useState([]);
   const [reviews, setReviews] = useState([]);
+  const [followStats, setFollowStats] = useState({ followingCount: 0, followersCount: 0 });
+  const [followingList, setFollowingList] = useState([]);
   const [toast, setToast] = useState(null);
 
-  // Search states
+  // Local Filter & Search in Watchlist
+  const [statusFilter, setStatusFilter] = useState('ALL');
+  const [itemSearchQuery, setItemSearchQuery] = useState('');
+
+  // TMDB Search states
   const [searchQuery, setSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState([]);
   const [isSearching, setIsSearching] = useState(false);
@@ -63,6 +70,8 @@ function App() {
   const [newListTitle, setNewListTitle] = useState('');
   const [isPublic, setIsPublic] = useState(true);
   const [showNewListModal, setShowNewListModal] = useState(false);
+
+  const [followTargetId, setFollowTargetId] = useState('');
 
   const [reviewForm, setReviewForm] = useState({
     tmdbId: '',
@@ -84,7 +93,7 @@ function App() {
     setTimeout(() => setToast(null), 4500);
   };
 
-  // Load User Data
+  // Load User Data & Social Stats
   const loadUserData = async () => {
     try {
       const data = await apiRequest(`${API_BASE}/watchlists/user/${userId}`);
@@ -97,11 +106,23 @@ function App() {
         setItems([]);
       }
 
+      // Reviews
       try {
         const revData = await apiRequest(`${API_BASE}/reviews/user/${userId}`);
         setReviews(Array.isArray(revData) ? revData : []);
       } catch {
         setReviews([]);
+      }
+
+      // Social / Follow Stats
+      try {
+        const stats = await apiRequest(`${API_BASE}/follows/${userId}/stats`);
+        if (stats) setFollowStats(stats);
+
+        const following = await apiRequest(`${API_BASE}/follows/${userId}/following`);
+        if (Array.isArray(following)) setFollowingList(following);
+      } catch {
+        // ignore if not setup yet
       }
     } catch (err) {
       notify(err.message, true);
@@ -123,6 +144,15 @@ function App() {
       });
   }, [selectedList]);
 
+  // Filtered Items in current Watchlist
+  const displayedItems = useMemo(() => {
+    return items.filter((item) => {
+      const matchesStatus = statusFilter === 'ALL' || item.status === statusFilter;
+      const matchesSearch = !itemSearchQuery.trim() || item.title.toLowerCase().includes(itemSearchQuery.toLowerCase());
+      return matchesStatus && matchesSearch;
+    });
+  }, [items, statusFilter, itemSearchQuery]);
+
   // Actions
   const handleRegister = async (e) => {
     e.preventDefault();
@@ -135,7 +165,7 @@ function App() {
       setUserId(data.id);
       setShowRegister(false);
       setRegForm({ username: '', email: '', password: '' });
-      notify(`Account created successfully! Welcome, ID: ${data.id}`);
+      notify(`Account created successfully! Welcome, User ID: ${data.id}`);
     } catch (err) {
       notify(err.message, true);
     }
@@ -152,7 +182,7 @@ function App() {
       });
       setNewListTitle('');
       setShowNewListModal(false);
-      notify('New watchlist created successfully!');
+      notify('New collection created successfully!');
       loadUserData();
     } catch (err) {
       notify(err.message, true);
@@ -161,10 +191,10 @@ function App() {
 
   const handleDeleteList = async (id, e) => {
     e.stopPropagation();
-    if (!window.confirm('Are you sure you want to delete this watchlist?')) return;
+    if (!window.confirm('Are you sure you want to delete this entire watchlist?')) return;
     try {
-      await apiRequest(`${API_BASE}/watchlists/${id}`, { method: 'DELETE' });
-      notify('Watchlist deleted');
+      await apiRequest(`${API_BASE}/watchlists/${id}?userId=${userId}`, { method: 'DELETE' });
+      notify('Watchlist deleted successfully');
       loadUserData();
     } catch (err) {
       notify(err.message, true);
@@ -173,9 +203,23 @@ function App() {
 
   const handleRemoveItem = async (itemId) => {
     try {
-      await apiRequest(`${API_BASE}/watchlist-items/${itemId}`, { method: 'DELETE' });
+      await apiRequest(`${API_BASE}/watchlist-items/${itemId}?userId=${userId}`, { method: 'DELETE' });
       setItems(items.filter((item) => item.id !== itemId));
-      notify('Item removed from watchlist');
+      notify('Movie removed from watchlist');
+    } catch (err) {
+      notify(err.message, true);
+    }
+  };
+
+  const handleUpdateItemStatus = async (itemId, newStatus) => {
+    try {
+      const updated = await apiRequest(`${API_BASE}/watchlist-items/${itemId}/status`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId: Number(userId), status: newStatus })
+      });
+      setItems(items.map((it) => (it.id === itemId ? { ...it, status: updated.status } : it)));
+      notify(`Status updated to ${newStatus.replace(/_/g, ' ')}`);
     } catch (err) {
       notify(err.message, true);
     }
@@ -192,7 +236,7 @@ function App() {
       const array = Array.isArray(results) ? results : [];
       setSearchResults(array);
       if (array.length === 0) {
-        notify('No movies or series found matching your search.');
+        notify('No movies or series found matching your query.');
       }
     } catch (err) {
       notify(err.message, true);
@@ -204,7 +248,7 @@ function App() {
   const handleAddFromSearch = async (movie, targetListId) => {
     const listId = targetListId || selectedList?.id;
     if (!listId) {
-      notify('Please select or create a watchlist first!', true);
+      notify('Please create or select a watchlist first!', true);
       return;
     }
     try {
@@ -224,13 +268,13 @@ function App() {
       if (selectedList && selectedList.id === Number(listId)) {
         setItems([...items, data]);
       }
-      notify(`Added "${movie.title}" to watchlist!`);
+      notify(`Added "${movie.title}" to your watchlist!`);
     } catch (err) {
       notify(err.message, true);
     }
   };
 
-  // Review Submissions
+  // Review Actions
   const handleAddReview = async (e) => {
     e.preventDefault();
     try {
@@ -253,7 +297,61 @@ function App() {
     }
   };
 
-  const totalSavedMovies = watchlists.reduce((acc, curr) => acc + (curr.items?.length || 0), items.length);
+  const handleDeleteReview = async (reviewId) => {
+    if (!window.confirm('Delete this review?')) return;
+    try {
+      await apiRequest(`${API_BASE}/reviews/${reviewId}?userId=${userId}`, { method: 'DELETE' });
+      setReviews(reviews.filter((r) => r.id !== reviewId));
+      notify('Review deleted');
+    } catch (err) {
+      notify(err.message, true);
+    }
+  };
+
+  const handleFlagReview = async (reviewId) => {
+    try {
+      await apiRequest(`${API_BASE}/reviews/${reviewId}/flag`, { method: 'PATCH' });
+      setReviews(reviews.map((r) => (r.id === reviewId ? { ...r, isFlagged: true } : r)));
+      notify('Review flagged for community moderation.');
+    } catch (err) {
+      notify(err.message, true);
+    }
+  };
+
+  // Follow Action
+  const handleFollowUser = async (e) => {
+    e.preventDefault();
+    if (!followTargetId || Number(followTargetId) === Number(userId)) {
+      notify('Enter a valid User ID different from your own', true);
+      return;
+    }
+    try {
+      await apiRequest(`${API_BASE}/follows/${userId}/follow/${followTargetId}`, { method: 'POST' });
+      setFollowTargetId('');
+      notify(`You are now following user #${followTargetId}!`);
+      loadUserData();
+    } catch (err) {
+      notify(err.message, true);
+    }
+  };
+
+  const handleUnfollowUser = async (targetId) => {
+    try {
+      await apiRequest(`${API_BASE}/follows/${userId}/unfollow/${targetId}`, { method: 'DELETE' });
+      notify(`Unfollowed user #${targetId}`);
+      loadUserData();
+    } catch (err) {
+      notify(err.message, true);
+    }
+  };
+
+  const ratingLabel = (val) => {
+    if (val >= 10) return 'Masterpiece! 🏆';
+    if (val >= 9) return 'Incredible! ⭐';
+    if (val >= 7) return 'Great Movie 👍';
+    if (val >= 5) return 'Average / Decent 🍿';
+    return 'Disappointing 👎';
+  };
 
   return (
     <div className="app-container">
@@ -265,13 +363,13 @@ function App() {
         </div>
       )}
 
-      {/* Top Navbar */}
+      {/* Header Bar */}
       <header className="header-nav">
-        <div className="brand-wrapper">
+        <div className="brand-wrapper" onClick={() => setActiveTab('watchlists')}>
           <div className="brand-logo-icon">🎬</div>
           <div>
-            <div className="brand-title">CineTrack</div>
-            <div className="brand-tagline">Movie & Series Watchlist Platform</div>
+            <div className="brand-title">CineTrack Platform</div>
+            <div className="brand-tagline">Movie & Series Watchlist Hub</div>
           </div>
         </div>
 
@@ -286,7 +384,7 @@ function App() {
           </button>
 
           <div className="user-badge-pill">
-            <span style={{ color: 'var(--text-muted)' }}>User ID:</span>
+            <span>👤 User ID:</span>
             <input
               type="number"
               min="1"
@@ -295,16 +393,17 @@ function App() {
               title="Change User ID to switch profile"
             />
           </div>
+
           <button
             className="btn btn-secondary btn-sm"
             onClick={() => setShowRegister(!showRegister)}
           >
-            {showRegister ? '✕ Close' : '+ New Account'}
+            {showRegister ? '✕ Close' : '+ Register User'}
           </button>
         </div>
       </header>
 
-      {/* Registration Card Modal */}
+      {/* Registration Card */}
       {showRegister && (
         <div className="glass-card" style={{ animation: 'slideInUp 0.25s ease' }}>
           <div className="card-header-flex">
@@ -339,37 +438,42 @@ function App() {
         </div>
       )}
 
-      {/* Hero Stats Banner */}
-      <div className="hero-banner">
-        <div className="hero-text">
-          <h1>Track, Discover & Review Cinema</h1>
+      {/* Hero Spotlight & Real Stats */}
+      <div className="spotlight-banner">
+        <div className="spotlight-info">
+          <h1>Curate Your Cinema Universe</h1>
           <p>
-            Organize movies and shows into curated watchlists, discover top-rated titles powered by TMDB, and share your ratings.
+            Build public and private watchlists, discover trending cinema powered by TMDB, track your watch progress, and review your favorite films.
           </p>
         </div>
-        <div className="hero-stats">
-          <div className="stat-card">
+
+        <div className="stats-grid">
+          <div className="stat-box">
             <div className="stat-number">{watchlists.length}</div>
-            <div className="stat-label">Watchlists</div>
+            <div className="stat-title">Watchlists</div>
           </div>
-          <div className="stat-card">
+          <div className="stat-box">
             <div className="stat-number">{items.length}</div>
-            <div className="stat-label">Active Items</div>
+            <div className="stat-title">Current Items</div>
           </div>
-          <div className="stat-card">
+          <div className="stat-box">
             <div className="stat-number">{reviews.length}</div>
-            <div className="stat-label">Reviews</div>
+            <div className="stat-title">Reviews</div>
+          </div>
+          <div className="stat-box">
+            <div className="stat-number">{followStats.followingCount || 0}</div>
+            <div className="stat-title">Following</div>
           </div>
         </div>
       </div>
 
-      {/* Tab Navigation */}
+      {/* Tabs Navigation */}
       <nav className="tabs-navigation">
         <button
           className={`tab-btn ${activeTab === 'watchlists' ? 'active' : ''}`}
           onClick={() => setActiveTab('watchlists')}
         >
-          <span>📁</span> My Watchlists & Movies
+          <span>📁</span> My Watchlists & Movies ({watchlists.length})
         </button>
         <button
           className={`tab-btn ${activeTab === 'search' ? 'active' : ''}`}
@@ -383,12 +487,18 @@ function App() {
         >
           <span>⭐</span> Reviews & Ratings ({reviews.length})
         </button>
+        <button
+          className={`tab-btn ${activeTab === 'community' ? 'active' : ''}`}
+          onClick={() => setActiveTab('community')}
+        >
+          <span>👥</span> Community & Following ({followStats.followingCount || 0})
+        </button>
       </nav>
 
       {/* ================= TAB 1: WATCHLISTS & MOVIES ================= */}
       {activeTab === 'watchlists' && (
         <div className="content-grid">
-          {/* Left Column: Watchlists Manager */}
+          {/* Left Column: Watchlist Selector */}
           <div>
             <div className="glass-card">
               <div className="card-header-flex">
@@ -397,7 +507,7 @@ function App() {
                   className="btn btn-primary btn-sm"
                   onClick={() => setShowNewListModal(!showNewListModal)}
                 >
-                  {showNewListModal ? '✕' : '+ Create'}
+                  {showNewListModal ? '✕' : '+ New List'}
                 </button>
               </div>
 
@@ -409,14 +519,14 @@ function App() {
                     onChange={(e) => setNewListTitle(e.target.value)}
                     required
                   />
-                  <label style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '12px', fontSize: '0.88rem', color: '#cbd5e1' }}>
+                  <label style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '12px', fontSize: '0.88rem', color: 'var(--text-muted)' }}>
                     <input
                       type="checkbox"
                       checked={isPublic}
                       onChange={(e) => setIsPublic(e.target.checked)}
                       style={{ width: 'auto', marginBottom: 0 }}
                     />
-                    Public collection (visible to others)
+                    Public collection (visible to other users)
                   </label>
                   <button type="submit" className="btn btn-primary" style={{ width: '100%' }}>
                     Save Collection
@@ -454,9 +564,9 @@ function App() {
                       <button
                         className="btn btn-danger btn-sm"
                         onClick={(e) => handleDeleteList(list.id, e)}
-                        title="Delete this watchlist"
+                        title="Delete this collection"
                       >
-                        Delete
+                        ✕
                       </button>
                     </div>
                   ))
@@ -464,11 +574,11 @@ function App() {
               </div>
             </div>
 
-            {/* Quick TMDB Search Widget */}
+            {/* Quick TMDB Search Banner */}
             <div className="glass-card">
               <h3 className="card-title">⚡ Quick Search</h3>
               <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginBottom: '12px' }}>
-                Search TMDB and jump right to discovery:
+                Search TMDB catalog directly:
               </p>
               <form
                 onSubmit={(e) => {
@@ -479,7 +589,7 @@ function App() {
                 className="search-wrapper"
               >
                 <input
-                  placeholder="Movie or series name..."
+                  placeholder="Movie or show title..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                 />
@@ -490,17 +600,17 @@ function App() {
             </div>
           </div>
 
-          {/* Right Column: Active Movies in Watchlist */}
+          {/* Right Column: Movies in Selected Watchlist */}
           <div>
             <div className="glass-card">
               <div className="card-header-flex">
                 <div>
-                  <h2 style={{ fontSize: '1.4rem', fontWeight: 800 }}>
+                  <h2 style={{ fontSize: '1.45rem', fontWeight: 800 }}>
                     {selectedList ? selectedList.title : 'Select a Watchlist'}
                   </h2>
                   {selectedList && (
                     <p style={{ color: 'var(--text-muted)', fontSize: '0.88rem' }}>
-                      {items.length} titles in this collection
+                      Showing {displayedItems.length} of {items.length} titles
                     </p>
                   )}
                 </div>
@@ -510,38 +620,70 @@ function App() {
                     className="btn btn-secondary btn-sm"
                     onClick={() => setActiveTab('search')}
                   >
-                    + Find Movies to Add
+                    + Find More on TMDB
                   </button>
                 )}
               </div>
 
+              {selectedList && (
+                <>
+                  {/* Status Filter Chips & In-list Search */}
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '10px', marginBottom: '16px' }}>
+                    <div className="filter-chips-bar" style={{ marginBottom: 0 }}>
+                      {['ALL', 'PLAN_TO_WATCH', 'WATCHING', 'COMPLETED', 'DROPPED'].map((st) => (
+                        <button
+                          key={st}
+                          className={`chip-btn ${statusFilter === st ? 'active' : ''}`}
+                          onClick={() => setStatusFilter(st)}
+                        >
+                          {st === 'ALL' ? 'All' : st.replace(/_/g, ' ')}
+                        </button>
+                      ))}
+                    </div>
+
+                    <input
+                      placeholder="Filter by title in list..."
+                      value={itemSearchQuery}
+                      onChange={(e) => setItemSearchQuery(e.target.value)}
+                      style={{ maxWidth: '240px', padding: '6px 12px', fontSize: '0.85rem', marginBottom: 0 }}
+                    />
+                  </div>
+                </>
+              )}
+
               {!selectedList ? (
                 <div className="empty-placeholder">
                   <div className="empty-placeholder-icon">📽️</div>
-                  <p>Select a watchlist on the left or create a new one to view your saved movies.</p>
+                  <p>Select a collection on the left or create a new one to view your saved movies.</p>
                 </div>
-              ) : items.length === 0 ? (
+              ) : displayedItems.length === 0 ? (
                 <div className="empty-placeholder">
                   <div className="empty-placeholder-icon">🍿</div>
-                  <p>This watchlist is empty! Search and add movies from TMDB.</p>
-                  <button
-                    className="btn btn-primary"
-                    style={{ marginTop: '14px' }}
-                    onClick={() => setActiveTab('search')}
-                  >
-                    🔍 Discover Movies on TMDB
-                  </button>
+                  <p>
+                    {items.length === 0
+                      ? 'This collection is empty! Search and add movies from TMDB.'
+                      : 'No movies match the selected status filter.'}
+                  </p>
+                  {items.length === 0 && (
+                    <button
+                      className="btn btn-primary"
+                      style={{ marginTop: '14px' }}
+                      onClick={() => setActiveTab('search')}
+                    >
+                      🔍 Discover Movies on TMDB
+                    </button>
+                  )}
                 </div>
               ) : (
                 <div className="movies-grid-responsive">
-                  {items.map((item) => (
+                  {displayedItems.map((item) => (
                     <div key={item.id} className="movie-poster-card">
                       <div className="poster-frame">
                         <img
                           src={
                             item.posterPath
                               ? (item.posterPath.startsWith('http') ? item.posterPath : `${TMDB_IMG}${item.posterPath}`)
-                              : 'https://via.placeholder.com/300x450/151d30/38bdf8?text=No+Poster'
+                              : 'https://via.placeholder.com/300x450/e2e8f0/0284c7?text=No+Poster'
                           }
                           alt={item.title}
                           loading="lazy"
@@ -551,22 +693,31 @@ function App() {
                             {item.mediaType}
                           </span>
                           <span className="badge-pill badge-rating">
-                            ★ TMDB #{item.tmdbId}
+                            ★ #{item.tmdbId}
                           </span>
                         </div>
                       </div>
 
                       <div className="card-details-body">
                         <div>
-                          <div className={`status-tag status-${item.status || 'PLAN_TO_WATCH'}`}>
-                            {item.status ? item.status.replace(/_/g, ' ') : 'PLAN TO WATCH'}
-                          </div>
+                          <select
+                            className="status-select-control"
+                            value={item.status || 'PLAN_TO_WATCH'}
+                            onChange={(e) => handleUpdateItemStatus(item.id, e.target.value)}
+                            title="Update watch status"
+                          >
+                            <option value="PLAN_TO_WATCH">Plan to Watch</option>
+                            <option value="WATCHING">Watching Now</option>
+                            <option value="COMPLETED">Completed</option>
+                            <option value="DROPPED">Dropped</option>
+                          </select>
+
                           <h4 className="movie-card-title" title={item.title}>
                             {item.title}
                           </h4>
                         </div>
 
-                        <div style={{ display: 'flex', gap: '8px', marginTop: '12px' }}>
+                        <div style={{ display: 'flex', gap: '8px', marginTop: '10px' }}>
                           <button
                             type="button"
                             className="btn btn-secondary btn-sm"
@@ -578,7 +729,7 @@ function App() {
                                 mediaType: item.mediaType
                               });
                               setActiveTab('reviews');
-                              notify(`Writing review for "${item.title}"`);
+                              notify(`Reviewing "${item.title}"`);
                             }}
                           >
                             ✍ Review
@@ -607,9 +758,9 @@ function App() {
         <div className="glass-card">
           <div className="card-header-flex">
             <div>
-              <h2 style={{ fontSize: '1.6rem', fontWeight: 800 }}>🔍 Discover TMDB Catalog</h2>
+              <h2 style={{ fontSize: '1.6rem', fontWeight: 800 }}>🔍 Explore Live TMDB Catalog</h2>
               <p style={{ color: 'var(--text-muted)', fontSize: '0.92rem' }}>
-                Search millions of movies and series directly with live metadata, ratings, and posters.
+                Search millions of movies and series directly with live posters, synopsis, and ratings.
               </p>
             </div>
           </div>
@@ -617,7 +768,7 @@ function App() {
           {/* Search Box */}
           <form onSubmit={handleSearchMovies} className="search-wrapper">
             <input
-              placeholder="Search by title (e.g. Interstellar, Oppenheimer, Succession, Dune)..."
+              placeholder="Search by title (e.g. Interstellar, Oppenheimer, Succession, Dune, Gladiator)..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               autoFocus
@@ -629,13 +780,12 @@ function App() {
 
           {/* Quick Trending Tags */}
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap', marginBottom: '24px' }}>
-            <span style={{ fontSize: '0.8rem', color: 'var(--text-faint)', fontWeight: 600 }}>TRENDING PICKS:</span>
-            {['Inception', 'Interstellar', 'Dune', 'Breaking Bad', 'The Dark Knight', 'Gladiator', 'Arcane'].map((item) => (
+            <span style={{ fontSize: '0.8rem', color: 'var(--text-faint)', fontWeight: 700 }}>POPULAR SEARCHES:</span>
+            {['Inception', 'Interstellar', 'Dune', 'Breaking Bad', 'The Dark Knight', 'Gladiator', 'Arcane', 'Severance'].map((item) => (
               <button
                 key={item}
                 type="button"
-                className="btn btn-secondary btn-sm"
-                style={{ padding: '4px 10px', fontSize: '0.8rem' }}
+                className="chip-btn"
                 onClick={(e) => {
                   setSearchQuery(item);
                   handleSearchMovies(e, item);
@@ -650,7 +800,7 @@ function App() {
           {searchResults.length === 0 ? (
             <div className="empty-placeholder">
               <div className="empty-placeholder-icon">🎬</div>
-              <p>Type a movie or TV show title above to browse results and add them to your watchlist.</p>
+              <p>Type any title above or click one of the popular search tags to explore titles.</p>
             </div>
           ) : (
             <div>
@@ -675,7 +825,7 @@ function App() {
                         src={
                           movie.posterPath
                             ? (movie.posterPath.startsWith('http') ? movie.posterPath : `${TMDB_IMG}${movie.posterPath}`)
-                            : 'https://via.placeholder.com/300x450/151d30/38bdf8?text=No+Poster'
+                            : 'https://via.placeholder.com/300x450/e2e8f0/0284c7?text=No+Poster'
                         }
                         alt={movie.title}
                         loading="lazy"
@@ -698,7 +848,7 @@ function App() {
                           {movie.title}
                         </h4>
                         <div className="movie-card-meta">
-                          {movie.releaseDate ? movie.releaseDate.substring(0, 4) : 'Unknown Year'} • ID: {movie.tmdbId}
+                          {movie.releaseDate ? movie.releaseDate.substring(0, 4) : 'Unknown Year'} • ID: #{movie.tmdbId}
                         </div>
                       </div>
 
@@ -712,8 +862,8 @@ function App() {
                             + Add to {selectedList ? `"${selectedList.title}"` : 'Watchlist'}
                           </button>
                         ) : (
-                          <span style={{ fontSize: '0.78rem', color: 'var(--accent-amber)' }}>
-                            Create a watchlist first
+                          <span style={{ fontSize: '0.78rem', color: 'var(--accent-amber)', textAlign: 'center' }}>
+                            Create a collection first
                           </span>
                         )}
 
@@ -749,7 +899,7 @@ function App() {
           <div className="glass-card">
             <h3 className="card-title">✍ Write a Review</h3>
             <p style={{ color: 'var(--text-muted)', fontSize: '0.85rem', marginBottom: '16px' }}>
-              Share your thoughts, score out of 10, and publish to your timeline.
+              Score out of 10 and write your review to share your thoughts.
             </p>
 
             <form onSubmit={handleAddReview}>
@@ -771,9 +921,12 @@ function App() {
                 <option value="TV">TV SERIES</option>
               </select>
 
-              <label style={{ fontSize: '0.82rem', color: 'var(--text-muted)', fontWeight: 600 }}>
-                SCORE: ⭐ {reviewForm.rating} / 10
-              </label>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
+                <label style={{ fontSize: '0.82rem', color: 'var(--text-muted)', fontWeight: 600 }}>SCORE: ⭐ {reviewForm.rating} / 10</label>
+                <span style={{ fontSize: '0.82rem', color: 'var(--accent-amber)', fontWeight: 700 }}>
+                  {ratingLabel(reviewForm.rating)}
+                </span>
+              </div>
               <div className="stars-picker">
                 {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((star) => (
                   <span
@@ -790,7 +943,7 @@ function App() {
               <label style={{ fontSize: '0.82rem', color: 'var(--text-muted)', fontWeight: 600 }}>REVIEW CONTENT:</label>
               <textarea
                 rows="4"
-                placeholder="What did you love or dislike about this movie?..."
+                placeholder="What did you think of the directing, acting, or story?..."
                 required
                 value={reviewForm.content}
                 onChange={(e) => setReviewForm({ ...reviewForm, content: e.target.value })}
@@ -804,7 +957,7 @@ function App() {
 
           {/* User Reviews Stream */}
           <div className="glass-card">
-            <h3 className="card-title">⭐ Your Reviews ({reviews.length})</h3>
+            <h3 className="card-title">⭐ Your Reviews Timeline ({reviews.length})</h3>
             {reviews.length === 0 ? (
               <div className="empty-placeholder">
                 <div className="empty-placeholder-icon">📝</div>
@@ -820,15 +973,107 @@ function App() {
                           {rev.mediaType}
                         </span>
                         <strong>TMDB Item #{rev.tmdbId}</strong>
+                        {rev.isFlagged && (
+                          <span style={{ marginLeft: '8px', fontSize: '0.75rem', color: 'var(--accent-rose)', fontWeight: 700 }}>
+                            [Flagged]
+                          </span>
+                        )}
                       </div>
                       <span style={{ color: 'var(--accent-amber)', fontWeight: 800, fontSize: '1.05rem' }}>
                         ★ {rev.rating} / 10
                       </span>
                     </div>
+
                     <p className="review-text-content">{rev.content}</p>
-                    <div style={{ marginTop: '10px', fontSize: '0.75rem', color: 'var(--text-faint)' }}>
-                      Published on: {rev.createdAt ? new Date(rev.createdAt).toLocaleDateString() : 'Recent'}
+
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '12px', fontSize: '0.78rem', color: 'var(--text-faint)' }}>
+                      <span>Published: {rev.createdAt ? new Date(rev.createdAt).toLocaleDateString() : 'Recent'}</span>
+                      <div style={{ display: 'flex', gap: '8px' }}>
+                        <button
+                          type="button"
+                          className="btn btn-secondary btn-sm"
+                          style={{ padding: '3px 8px', fontSize: '0.75rem' }}
+                          onClick={() => handleFlagReview(rev.id)}
+                          title="Flag this review"
+                        >
+                          🚩 Flag
+                        </button>
+                        <button
+                          type="button"
+                          className="btn btn-danger btn-sm"
+                          style={{ padding: '3px 8px', fontSize: '0.75rem' }}
+                          onClick={() => handleDeleteReview(rev.id)}
+                          title="Delete review"
+                        >
+                          Delete
+                        </button>
+                      </div>
                     </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* ================= TAB 4: COMMUNITY & FOLLOWING ================= */}
+      {activeTab === 'community' && (
+        <div className="content-grid">
+          {/* Follow Form */}
+          <div className="glass-card">
+            <h3 className="card-title">👥 Follow a Cinephile</h3>
+            <p style={{ color: 'var(--text-muted)', fontSize: '0.88rem', marginBottom: '16px' }}>
+              Connect with other movie enthusiasts on CineTrack using their User ID.
+            </p>
+
+            <form onSubmit={handleFollowUser}>
+              <label style={{ fontSize: '0.82rem', color: 'var(--text-muted)', fontWeight: 600 }}>TARGET USER ID:</label>
+              <input
+                type="number"
+                min="1"
+                placeholder="Enter User ID (e.g. 2, 3...)"
+                required
+                value={followTargetId}
+                onChange={(e) => setFollowTargetId(e.target.value)}
+              />
+              <button type="submit" className="btn btn-primary" style={{ width: '100%', marginTop: '6px' }}>
+                + Follow User
+              </button>
+            </form>
+          </div>
+
+          {/* Following List */}
+          <div className="glass-card">
+            <h3 className="card-title">✨ People You Follow ({followingList.length})</h3>
+            {followingList.length === 0 ? (
+              <div className="empty-placeholder">
+                <div className="empty-placeholder-icon">🌐</div>
+                <p>You aren't following anyone yet. Connect with a user on the left!</p>
+              </div>
+            ) : (
+              <div>
+                {followingList.map((f) => (
+                  <div key={f.id} className="follow-user-card">
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                      <div className="user-avatar-circle">
+                        #{f.following ? f.following.id : f.id}
+                      </div>
+                      <div>
+                        <strong>User #{f.following ? f.following.id : 'Member'}</strong>
+                        <div style={{ fontSize: '0.78rem', color: 'var(--text-faint)' }}>
+                          Following since: {f.createdAt ? new Date(f.createdAt).toLocaleDateString() : 'Recently'}
+                        </div>
+                      </div>
+                    </div>
+
+                    <button
+                      type="button"
+                      className="btn btn-secondary btn-sm"
+                      onClick={() => handleUnfollowUser(f.following ? f.following.id : f.id)}
+                    >
+                      Unfollow
+                    </button>
                   </div>
                 ))}
               </div>
