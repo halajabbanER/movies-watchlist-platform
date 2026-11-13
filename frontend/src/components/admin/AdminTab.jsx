@@ -125,7 +125,9 @@ export default function AdminTab({ notify }) {
       {/* Admin Spotlight Banner */}
       <div className="admin-header-card">
         <div className="admin-header-info">
-          <div className="admin-badge-pill">🛡️ Administrator Console</div>
+          <div className="admin-badge-pill">
+            <i className="bi bi-shield-lock-fill me-1"></i> Administrator Console
+          </div>
           <h2>Platform Management & Moderation</h2>
           <p>
             Control registered users, oversee community reported content, promote admins, and inspect live backend services.
@@ -133,19 +135,22 @@ export default function AdminTab({ notify }) {
         </div>
 
         <button
-          className="btn btn-secondary btn-sm"
+          className="btn btn-outline-secondary btn-sm d-flex align-items-center gap-1"
           onClick={loadAdminData}
           disabled={loading}
           style={{ alignSelf: 'flex-start' }}
         >
-          {loading ? 'Refreshing...' : '🔄 Refresh Admin Data'}
+          <i className="bi bi-arrow-clockwise"></i>
+          <span>{loading ? 'Refreshing...' : 'Refresh Admin Data'}</span>
         </button>
       </div>
 
       {/* Admin KPI Cards */}
       <div className="admin-kpi-grid">
         <div className="admin-kpi-card">
-          <div className="admin-kpi-icon">👥</div>
+          <div className="admin-kpi-icon text-primary">
+            <i className="bi bi-people-fill"></i>
+          </div>
           <div>
             <div className="admin-kpi-number">{users.length}</div>
             <div className="admin-kpi-label">Registered Accounts</div>
@@ -153,7 +158,9 @@ export default function AdminTab({ notify }) {
         </div>
 
         <div className="admin-kpi-card">
-          <div className="admin-kpi-icon">🚩</div>
+          <div className="admin-kpi-icon text-danger">
+            <i className="bi bi-flag-fill"></i>
+          </div>
           <div>
             <div className="admin-kpi-number">{flaggedReviews.length}</div>
             <div className="admin-kpi-label">Flagged Reviews</div>
@@ -161,7 +168,9 @@ export default function AdminTab({ notify }) {
         </div>
 
         <div className="admin-kpi-card">
-          <div className="admin-kpi-icon">👑</div>
+          <div className="admin-kpi-icon text-warning">
+            <i className="bi bi-shield-fill-check"></i>
+          </div>
           <div>
             <div className="admin-kpi-number">
               {users.filter((u) => u.role === 'ROLE_ADMIN').length}
@@ -171,7 +180,9 @@ export default function AdminTab({ notify }) {
         </div>
 
         <div className="admin-kpi-card">
-          <div className="admin-kpi-icon">⚡</div>
+          <div className="admin-kpi-icon text-success">
+            <i className="bi bi-hdd-network-fill"></i>
+          </div>
           <div>
             <div className="admin-kpi-number" style={{ color: 'var(--accent-emerald)' }}>
               {systemHealth?.status || 'UP'}
@@ -224,7 +235,7 @@ export default function AdminTab({ notify }) {
           </div>
 
           <div className="admin-table-wrapper">
-            <table className="admin-table">
+            <table className="admin-table table table-hover align-middle mb-0">
               <thead>
                 <tr>
                   <th>ID</th>
@@ -268,7 +279,7 @@ export default function AdminTab({ notify }) {
                         <div style={{ display: 'inline-flex', gap: '8px' }}>
                           <button
                             type="button"
-                            className="btn btn-secondary btn-sm"
+                            className="btn btn-outline-secondary btn-sm d-flex align-items-center gap-1"
                             onClick={() => handleToggleUserRole(u)}
                             title={
                               u.role === 'ROLE_ADMIN'
@@ -276,15 +287,17 @@ export default function AdminTab({ notify }) {
                                 : 'Promote to administrator'
                             }
                           >
-                            {u.role === 'ROLE_ADMIN' ? 'Demote' : 'Promote Admin'}
+                            <i className={u.role === 'ROLE_ADMIN' ? 'bi bi-person-dash' : 'bi bi-shield-plus'}></i>
+                            <span>{u.role === 'ROLE_ADMIN' ? 'Demote' : 'Promote Admin'}</span>
                           </button>
                           <button
                             type="button"
-                            className="btn btn-danger btn-sm"
+                            className="btn btn-outline-danger btn-sm d-flex align-items-center gap-1"
                             onClick={() => handleDeleteUser(u)}
                             title="Delete this user"
                           >
-                            Delete
+                            <i className="bi bi-trash3-fill"></i>
+                            <span>Delete</span>
                           </button>
                         </div>
                       </td>

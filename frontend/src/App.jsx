@@ -371,32 +371,37 @@ export default function App() {
           className={`tab-btn ${activeTab === 'watchlists' ? 'active' : ''}`}
           onClick={() => setActiveTab('watchlists')}
         >
-          <span>📁</span> My Watchlists & Movies ({watchlists.length})
+          <i className="bi bi-collection-play-fill me-1 text-primary"></i>
+          <span>My Watchlists ({watchlists.length})</span>
         </button>
         <button
           className={`tab-btn ${activeTab === 'search' ? 'active' : ''}`}
           onClick={() => setActiveTab('search')}
         >
-          <span>🔍</span> Discover & Search TMDB
+          <i className="bi bi-search-heart-fill me-1 text-info"></i>
+          <span>Discover TMDB</span>
         </button>
         <button
           className={`tab-btn ${activeTab === 'reviews' ? 'active' : ''}`}
           onClick={() => setActiveTab('reviews')}
         >
-          <span>⭐</span> Reviews & Ratings ({reviews.length})
+          <i className="bi bi-star-fill me-1 text-warning"></i>
+          <span>Reviews & Ratings ({reviews.length})</span>
         </button>
         <button
           className={`tab-btn ${activeTab === 'community' ? 'active' : ''}`}
           onClick={() => setActiveTab('community')}
         >
-          <span>👥</span> Community & Following ({followStats.followingCount || 0})
+          <i className="bi bi-people-fill me-1 text-success"></i>
+          <span>Community Directory</span>
         </button>
         <button
           className={`tab-btn ${activeTab === 'admin' ? 'active' : ''}`}
           onClick={() => setActiveTab('admin')}
           style={currentUser.role === 'ROLE_ADMIN' ? { border: '1px solid var(--accent-indigo)' } : {}}
         >
-          <span>🛡️</span> Admin Center {currentUser.role === 'ROLE_ADMIN' ? '👑' : ''}
+          <i className="bi bi-shield-lock-fill me-1 text-danger"></i>
+          <span>Admin Center {currentUser.role === 'ROLE_ADMIN' ? '👑' : ''}</span>
         </button>
       </nav>
 

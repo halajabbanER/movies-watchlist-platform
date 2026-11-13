@@ -46,8 +46,10 @@ export default function AuthScreen({ theme, toggleTheme, toast, notify }) {
 
       <div className="auth-hero-container">
         <div className="auth-card-container">
-          <div className="auth-header">
-            <div className="auth-header-icon">🍿</div>
+          <div className="auth-header text-center">
+            <div className="auth-header-icon">
+              <i className="bi bi-film fs-1 text-primary"></i>
+            </div>
             <h2>{authMode === 'login' ? 'Sign In to CineTrack' : 'Create an Account'}</h2>
             <p>
               {authMode === 'login'
@@ -62,20 +64,20 @@ export default function AuthScreen({ theme, toggleTheme, toast, notify }) {
               className={`auth-tab ${authMode === 'login' ? 'active' : ''}`}
               onClick={() => { setAuthMode('login'); setAuthError(null); }}
             >
-              🔑 Sign In
+              <i className="bi bi-box-arrow-in-right me-1"></i> Sign In
             </button>
             <button
               type="button"
               className={`auth-tab ${authMode === 'register' ? 'active' : ''}`}
               onClick={() => { setAuthMode('register'); setAuthError(null); }}
             >
-              ✨ Register New
+              <i className="bi bi-person-plus-fill me-1"></i> Register New
             </button>
           </div>
 
           {authError && (
-            <div className="auth-error-banner">
-              <span>⚠️</span>
+            <div className="auth-error-banner alert alert-danger d-flex align-items-center gap-2 p-2">
+              <i className="bi bi-exclamation-triangle-fill"></i>
               <span>{authError}</span>
             </div>
           )}
@@ -83,10 +85,11 @@ export default function AuthScreen({ theme, toggleTheme, toast, notify }) {
           {authMode === 'login' ? (
             <form onSubmit={handleLoginSubmit} className="auth-form">
               <div className="auth-field">
-                <label>Email Address or Username</label>
+                <label className="form-label mb-1">Email Address or Username</label>
                 <div className="auth-input-wrapper">
                   <input
                     type="text"
+                    className="form-control"
                     placeholder="e.g. user@example.com or username"
                     required
                     autoFocus
@@ -97,10 +100,11 @@ export default function AuthScreen({ theme, toggleTheme, toast, notify }) {
               </div>
 
               <div className="auth-field">
-                <label>Password</label>
+                <label className="form-label mb-1">Password</label>
                 <div className="auth-input-wrapper">
                   <input
                     type={showPassword ? 'text' : 'password'}
+                    className="form-control"
                     placeholder="Enter your secret password"
                     required
                     value={loginForm.password}
@@ -112,7 +116,7 @@ export default function AuthScreen({ theme, toggleTheme, toast, notify }) {
                     onClick={() => setShowPassword(!showPassword)}
                     title={showPassword ? 'Hide password' : 'Show password'}
                   >
-                    {showPassword ? '🙈' : '👁️'}
+                    <i className={showPassword ? 'bi bi-eye-slash-fill' : 'bi bi-eye-fill'}></i>
                   </button>
                 </div>
               </div>
@@ -120,18 +124,20 @@ export default function AuthScreen({ theme, toggleTheme, toast, notify }) {
               <button
                 type="submit"
                 disabled={isSubmittingAuth}
-                className="btn btn-primary auth-submit-btn"
+                className="btn btn-primary auth-submit-btn w-100"
               >
+                <i className="bi bi-box-arrow-in-right me-1"></i>
                 {isSubmittingAuth ? 'Signing In...' : 'Sign In with JWT'}
               </button>
             </form>
           ) : (
             <form onSubmit={handleRegisterSubmit} className="auth-form">
               <div className="auth-field">
-                <label>Username</label>
+                <label className="form-label mb-1">Username</label>
                 <div className="auth-input-wrapper">
                   <input
                     type="text"
+                    className="form-control"
                     placeholder="Choose a unique username"
                     required
                     autoFocus
@@ -142,10 +148,11 @@ export default function AuthScreen({ theme, toggleTheme, toast, notify }) {
               </div>
 
               <div className="auth-field">
-                <label>Email Address</label>
+                <label className="form-label mb-1">Email Address</label>
                 <div className="auth-input-wrapper">
                   <input
                     type="email"
+                    className="form-control"
                     placeholder="name@example.com"
                     required
                     value={regForm.email}
@@ -155,10 +162,11 @@ export default function AuthScreen({ theme, toggleTheme, toast, notify }) {
               </div>
 
               <div className="auth-field">
-                <label>Password (min 6 chars)</label>
+                <label className="form-label mb-1">Password (min 6 chars)</label>
                 <div className="auth-input-wrapper">
                   <input
                     type={showPassword ? 'text' : 'password'}
+                    className="form-control"
                     placeholder="At least 6 characters"
                     required
                     minLength={6}
@@ -171,7 +179,7 @@ export default function AuthScreen({ theme, toggleTheme, toast, notify }) {
                     onClick={() => setShowPassword(!showPassword)}
                     title={showPassword ? 'Hide password' : 'Show password'}
                   >
-                    {showPassword ? '🙈' : '👁️'}
+                    <i className={showPassword ? 'bi bi-eye-slash-fill' : 'bi bi-eye-fill'}></i>
                   </button>
                 </div>
               </div>
@@ -179,8 +187,9 @@ export default function AuthScreen({ theme, toggleTheme, toast, notify }) {
               <button
                 type="submit"
                 disabled={isSubmittingAuth}
-                className="btn btn-primary auth-submit-btn"
+                className="btn btn-primary auth-submit-btn w-100"
               >
+                <i className="bi bi-person-check-fill me-1"></i>
                 {isSubmittingAuth ? 'Creating Account...' : 'Create Account & Sign In'}
               </button>
             </form>
@@ -188,15 +197,15 @@ export default function AuthScreen({ theme, toggleTheme, toast, notify }) {
 
           <div className="auth-footer-help">
             <div className="auth-feature-pill">
-              <span>🔒</span>
-              <span>JWT Token & User Profile stored in localStorage</span>
+              <i className="bi bi-shield-lock-fill text-primary"></i>
+              <span>JWT Token & User Profile stored securely in localStorage</span>
             </div>
             <div className="auth-feature-pill">
-              <span>🛡️</span>
+              <i className="bi bi-patch-check-fill text-success"></i>
               <span>Automatic Bearer token Authorization on all API requests</span>
             </div>
             <div className="auth-feature-pill">
-              <span>🎬</span>
+              <i className="bi bi-camera-reels-fill text-info"></i>
               <span>Personal watchlists, TMDB discovery, reviews & community</span>
             </div>
           </div>
@@ -205,4 +214,3 @@ export default function AuthScreen({ theme, toggleTheme, toast, notify }) {
     </div>
   );
 }
-
