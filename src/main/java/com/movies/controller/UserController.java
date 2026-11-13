@@ -9,6 +9,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/api/users")
@@ -18,13 +19,20 @@ public class UserController {
     private final UserService userService;
 
     @PostMapping("/register")
-    public ResponseEntity<User> registerUser(@RequestBody RegisterRequest request) {
-        User createdUser = userService.registerUser(
+    public ResponseEntity<Map<String, Object>> registerUser(@RequestBody RegisterRequest request) {
+        Map<String, Object> response = userService.registerUser(
                 request.getUsername(),
                 request.getEmail(),
                 request.getPassword()
         );
-        return ResponseEntity.status(HttpStatus.CREATED).body(createdUser);
+        return ResponseEntity.status(HttpStatus.CREATED).body(response);
+    }
+
+    @PostMapping("/login")
+    public ResponseEntity<Map<String, Object>> login(@RequestBody Map<String, String> loginRequest) {
+        String identifier = loginRequest.getOrDefault("email", loginRequest.get("username"));
+        String password = loginRequest.get("password");
+        return ResponseEntity.ok(userService.loginUser(identifier, password));
     }
 
     @GetMapping("/{id}")

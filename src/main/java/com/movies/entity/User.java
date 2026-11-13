@@ -32,7 +32,7 @@ public class User {
     @Column(nullable = false, unique = true, length = 100)
     private String email;
 
-    @JsonProperty(access = JsonProperty.Access.WRITE_ONLY)
+    @JsonIgnore
     @Column(nullable = false)
     private String password;
 

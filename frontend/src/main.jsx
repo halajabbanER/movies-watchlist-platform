@@ -7,7 +7,13 @@ const TMDB_IMG = 'https://image.tmdb.org/t/p/w500';
 
 async function apiRequest(url, options = {}) {
   try {
-    const res = await fetch(url, options);
+    const token = localStorage.getItem('token');
+    const headers = { ...options.headers };
+    if (token) {
+      headers['Authorization'] = `Bearer ${token}`;
+    }
+
+    const res = await fetch(url, { ...options, headers });
     let data = null;
     const contentType = res.headers.get('content-type');
     if (contentType && contentType.includes('application/json')) {
@@ -85,6 +91,11 @@ function App() {
     email: '',
     password: ''
   });
+  const [loginForm, setLoginForm] = useState({
+    identifier: '',
+    password: ''
+  });
+  const [authMode, setAuthMode] = useState('login'); // 'login' | 'register'
   const [showRegister, setShowRegister] = useState(false);
 
   const notify = (msg, isError = false) => {
@@ -162,10 +173,38 @@ function App() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(regForm)
       });
+      if (data.token) {
+        localStorage.setItem('token', data.token);
+      }
       setUserId(data.id);
       setShowRegister(false);
       setRegForm({ username: '', email: '', password: '' });
-      notify(`Account created successfully! Welcome, User ID: ${data.id}`);
+      notify(`Account created successfully! Welcome, ${data.username || data.id}`);
+      loadUserData();
+    } catch (err) {
+      notify(err.message, true);
+    }
+  };
+
+  const handleLogin = async (e) => {
+    e.preventDefault();
+    try {
+      const data = await apiRequest(`${API_BASE}/users/login`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          email: loginForm.identifier,
+          password: loginForm.password
+        })
+      });
+      if (data.token) {
+        localStorage.setItem('token', data.token);
+      }
+      setUserId(data.id);
+      setShowRegister(false);
+      setLoginForm({ identifier: '', password: '' });
+      notify(`Welcome back, ${data.username || 'User #' + data.id}!`);
+      loadUserData();
     } catch (err) {
       notify(err.message, true);
     }
@@ -398,43 +437,80 @@ function App() {
             className="btn btn-secondary btn-sm"
             onClick={() => setShowRegister(!showRegister)}
           >
-            {showRegister ? '✕ Close' : '+ Register User'}
+            {showRegister ? '✕ Close' : '🔐 Sign In / Register'}
           </button>
         </div>
       </header>
 
-      {/* Registration Card */}
+      {/* Auth Card (Login & Register) */}
       {showRegister && (
-        <div className="glass-card" style={{ animation: 'slideInUp 0.25s ease' }}>
+        <div className="glass-card" style={{ animation: 'slideInUp 0.25s ease', maxWidth: '640px', margin: '0 auto 28px' }}>
           <div className="card-header-flex">
-            <h3 className="card-title">👤 Create New CineTrack Account</h3>
+            <div style={{ display: 'flex', gap: '8px' }}>
+              <button
+                type="button"
+                className={`chip-btn ${authMode === 'login' ? 'active' : ''}`}
+                onClick={() => setAuthMode('login')}
+              >
+                Sign In
+              </button>
+              <button
+                type="button"
+                className={`chip-btn ${authMode === 'register' ? 'active' : ''}`}
+                onClick={() => setAuthMode('register')}
+              >
+                Create Account
+              </button>
+            </div>
             <button className="btn btn-secondary btn-sm" onClick={() => setShowRegister(false)}>✕</button>
           </div>
-          <form onSubmit={handleRegister} style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '12px' }}>
-            <input
-              placeholder="Username"
-              required
-              value={regForm.username}
-              onChange={(e) => setRegForm({ ...regForm, username: e.target.value })}
-            />
-            <input
-              type="email"
-              placeholder="Email address"
-              required
-              value={regForm.email}
-              onChange={(e) => setRegForm({ ...regForm, email: e.target.value })}
-            />
-            <input
-              type="password"
-              placeholder="Password"
-              required
-              value={regForm.password}
-              onChange={(e) => setRegForm({ ...regForm, password: e.target.value })}
-            />
-            <button type="submit" className="btn btn-primary" style={{ height: '48px' }}>
-              Create Account
-            </button>
-          </form>
+
+          {authMode === 'login' ? (
+            <form onSubmit={handleLogin} style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+              <input
+                placeholder="Email or Username"
+                required
+                value={loginForm.identifier}
+                onChange={(e) => setLoginForm({ ...loginForm, identifier: e.target.value })}
+              />
+              <input
+                type="password"
+                placeholder="Password"
+                required
+                value={loginForm.password}
+                onChange={(e) => setLoginForm({ ...loginForm, password: e.target.value })}
+              />
+              <button type="submit" className="btn btn-primary" style={{ height: '46px' }}>
+                Sign In with JWT
+              </button>
+            </form>
+          ) : (
+            <form onSubmit={handleRegister} style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+              <input
+                placeholder="Username"
+                required
+                value={regForm.username}
+                onChange={(e) => setRegForm({ ...regForm, username: e.target.value })}
+              />
+              <input
+                type="email"
+                placeholder="Email address"
+                required
+                value={regForm.email}
+                onChange={(e) => setRegForm({ ...regForm, email: e.target.value })}
+              />
+              <input
+                type="password"
+                placeholder="Password (min 6 chars)"
+                required
+                value={regForm.password}
+                onChange={(e) => setRegForm({ ...regForm, password: e.target.value })}
+              />
+              <button type="submit" className="btn btn-primary" style={{ height: '46px' }}>
+                Create Account & Generate Token
+              </button>
+            </form>
+          )}
         </div>
       )}
 
