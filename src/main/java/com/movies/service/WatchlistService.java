@@ -44,6 +44,10 @@ public class WatchlistService {
         return watchlistRepository.findByUserIdAndIsPublicTrue(userId);
     }
 
+    public List<Watchlist> getAllPublicWatchlists() {
+        return watchlistRepository.findByIsPublicTrue();
+    }
+
     @Transactional
     public Watchlist updateWatchlist(Long watchlistId, Long userId, String title, Boolean isPublic) {
         Watchlist watchlist = getWatchlistById(watchlistId);

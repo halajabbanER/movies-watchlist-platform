@@ -42,6 +42,11 @@ public class WatchlistController {
         return ResponseEntity.ok(watchlistService.getPublicUserWatchlists(userId));
     }
 
+    @GetMapping("/public")
+    public ResponseEntity<List<Watchlist>> getAllPublicWatchlists() {
+        return ResponseEntity.ok(watchlistService.getAllPublicWatchlists());
+    }
+
     @PutMapping("/{id}")
     public ResponseEntity<Watchlist> updateWatchlist(
             @PathVariable Long id,
