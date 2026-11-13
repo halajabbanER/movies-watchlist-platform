@@ -36,6 +36,16 @@ async function apiRequest(url, options = {}) {
 function App() {
   const [userId, setUserId] = useState(1);
   const [activeTab, setActiveTab] = useState('watchlists'); // 'watchlists' | 'search' | 'reviews'
+  const [theme, setTheme] = useState(() => localStorage.getItem('theme') || 'light');
+
+  useEffect(() => {
+    document.documentElement.setAttribute('data-theme', theme);
+    localStorage.setItem('theme', theme);
+  }, [theme]);
+
+  const toggleTheme = () => {
+    setTheme((prev) => (prev === 'light' ? 'dark' : 'light'));
+  };
 
   // Data states
   const [watchlists, setWatchlists] = useState([]);
@@ -266,8 +276,17 @@ function App() {
         </div>
 
         <div className="nav-user-bar">
+          <button
+            type="button"
+            className="theme-toggle-btn"
+            onClick={toggleTheme}
+            title="Toggle Light / Dark mode"
+          >
+            {theme === 'light' ? '🌙 Dark Mode' : '☀️ Light Mode'}
+          </button>
+
           <div className="user-badge-pill">
-            <span style={{ color: '#94a3b8' }}>User ID:</span>
+            <span style={{ color: 'var(--text-muted)' }}>User ID:</span>
             <input
               type="number"
               min="1"
