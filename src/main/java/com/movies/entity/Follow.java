@@ -1,5 +1,6 @@
 package com.movies.entity;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
@@ -18,6 +19,7 @@ import java.time.LocalDateTime;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
+@JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
 public class Follow {
 
     @Id
@@ -26,10 +28,12 @@ public class Follow {
 
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "follower_id", nullable = false)
+    @JsonIgnoreProperties({"hibernateLazyInitializer", "handler", "watchlists", "reviews", "password"})
     private User follower;
 
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "following_id", nullable = false)
+    @JsonIgnoreProperties({"hibernateLazyInitializer", "handler", "watchlists", "reviews", "password"})
     private User following;
 
     @CreationTimestamp

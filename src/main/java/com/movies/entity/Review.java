@@ -1,5 +1,6 @@
 package com.movies.entity;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.movies.entity.enums.MediaType;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.Max;
@@ -16,6 +17,7 @@ import java.time.LocalDateTime;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
+@JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
 public class Review {
 
     @Id
@@ -24,6 +26,7 @@ public class Review {
 
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "user_id", nullable = false)
+    @JsonIgnoreProperties({"hibernateLazyInitializer", "handler", "watchlists", "reviews", "password"})
     private User user;
 
     @Column(name = "tmdb_id", nullable = false)

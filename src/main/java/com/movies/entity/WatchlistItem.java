@@ -1,5 +1,7 @@
 package com.movies.entity;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.movies.entity.enums.MediaType;
 import com.movies.entity.enums.WatchStatus;
 import jakarta.persistence.*;
@@ -20,12 +22,14 @@ import java.time.LocalDateTime;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
+@JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
 public class WatchlistItem {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    @JsonIgnore
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "watchlist_id", nullable = false)
     private Watchlist watchlist;
