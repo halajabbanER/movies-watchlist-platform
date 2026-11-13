@@ -26,7 +26,7 @@ public class Review {
 
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "user_id", nullable = false)
-    @JsonIgnoreProperties({"hibernateLazyInitializer", "handler", "watchlists", "reviews", "password"})
+    @com.fasterxml.jackson.annotation.JsonIgnore
     private User user;
 
     @Column(name = "tmdb_id", nullable = false)

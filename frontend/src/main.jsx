@@ -51,6 +51,10 @@ function App() {
     posterPath: ''
   });
 
+  const [searchQuery, setSearchQuery] = useState('');
+  const [searchResults, setSearchResults] = useState([]);
+  const [isSearching, setIsSearching] = useState(false);
+
   const [reviewForm, setReviewForm] = useState({
     tmdbId: '',
     mediaType: 'MOVIE',
@@ -107,6 +111,49 @@ function App() {
         notify(err.message, true);
       });
   }, [selectedList]);
+
+  const handleSearchMovies = async (e) => {
+    if (e) e.preventDefault();
+    if (!searchQuery.trim()) return;
+    setIsSearching(true);
+    try {
+      const results = await apiRequest(`${API_BASE}/tmdb/search?query=${encodeURIComponent(searchQuery.trim())}`);
+      const array = Array.isArray(results) ? results : [];
+      setSearchResults(array);
+      if (array.length === 0) {
+        notify('No movies or shows found matching your query.');
+      }
+    } catch (err) {
+      notify(err.message, true);
+    } finally {
+      setIsSearching(false);
+    }
+  };
+
+  const handleAddFromSearch = async (movie) => {
+    if (!selectedList) {
+      notify('Please select or create a watchlist first!', true);
+      return;
+    }
+    try {
+      const data = await apiRequest(`${API_BASE}/watchlist-items`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          watchlistId: selectedList.id,
+          userId: Number(userId),
+          tmdbId: Number(movie.tmdbId),
+          mediaType: movie.mediaType,
+          title: movie.title,
+          posterPath: movie.posterPath || null
+        })
+      });
+      setItems([...items, data]);
+      notify(`Added "${movie.title}" to ${selectedList.title}!`);
+    } catch (err) {
+      notify(err.message, true);
+    }
+  };
 
   const handleRegister = async (e) => {
     e.preventDefault();
@@ -345,6 +392,88 @@ function App() {
         </div>
 
         <div>
+          <div className="card">
+            <h2>🔍 Search TMDB Movies & Series</h2>
+            <form onSubmit={handleSearchMovies} className="search-form">
+              <input
+                placeholder="Search by title (e.g. Inception, Breaking Bad)..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+              />
+              <button type="submit" disabled={isSearching} style={{ minWidth: '100px' }}>
+                {isSearching ? 'Searching...' : 'Search'}
+              </button>
+            </form>
+
+            {searchResults.length > 0 && (
+              <div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+                  <span style={{ fontSize: '0.85rem', color: '#94a3b8' }}>
+                    Results found: {searchResults.length}
+                  </span>
+                  <button
+                    type="button"
+                    className="secondary"
+                    style={{ padding: '4px 10px', fontSize: '0.8rem' }}
+                    onClick={() => setSearchResults([])}
+                  >
+                    Clear Results
+                  </button>
+                </div>
+                <div className="search-results-grid">
+                  {searchResults.map((movie) => (
+                    <div key={`${movie.mediaType}-${movie.tmdbId}`} className="search-card">
+                      <img
+                        src={
+                          movie.posterPath
+                            ? (movie.posterPath.startsWith('http') ? movie.posterPath : `${TMDB_IMG}${movie.posterPath}`)
+                            : 'https://via.placeholder.com/200x300/1e293b/38bdf8?text=No+Poster'
+                        }
+                        alt={movie.title}
+                      />
+                      <div className="search-card-body">
+                        <div>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px' }}>
+                            <span className="badge">{movie.mediaType}</span>
+                            {movie.voteAverage ? (
+                              <span style={{ fontSize: '0.75rem', color: '#facc15' }}>⭐ {Number(movie.voteAverage).toFixed(1)}</span>
+                            ) : null}
+                          </div>
+                          <h4 title={movie.title}>{movie.title}</h4>
+                          {movie.releaseDate && (
+                            <p style={{ fontSize: '0.75rem', color: '#94a3b8', marginBottom: '8px' }}>
+                              {movie.releaseDate.substring(0, 4)}
+                            </p>
+                          )}
+                        </div>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                          <button
+                            type="button"
+                            onClick={() => handleAddFromSearch(movie)}
+                            style={{ fontSize: '0.85rem', padding: '6px 8px' }}
+                          >
+                            + Add to Watchlist
+                          </button>
+                          <button
+                            type="button"
+                            className="secondary"
+                            onClick={() => {
+                              setReviewForm({ ...reviewForm, tmdbId: String(movie.tmdbId), mediaType: movie.mediaType });
+                              notify(`Selected "${movie.title}" for review form.`);
+                            }}
+                            style={{ fontSize: '0.75rem', padding: '4px 8px' }}
+                          >
+                            ✍ Write Review
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+
           <div className="card">
             <h2>
               {selectedList ? `Items in: ${selectedList.title}` : 'Select a watchlist to view items'}

@@ -195,4 +195,65 @@ button.secondary:hover {
   background-color: #7f1d1d;
   border-color: #ef4444;
   color: #fee2e2;
-}       
+}
+
+.search-form {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 16px;
+}
+
+.search-form input {
+  margin-bottom: 0;
+  flex: 1;
+}
+
+.search-results-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: 14px;
+  margin-top: 14px;
+  margin-bottom: 20px;
+  max-height: 480px;
+  overflow-y: auto;
+  padding: 4px;
+}
+
+.search-card {
+  background-color: #0f172a;
+  border: 1px solid #334155;
+  border-radius: 8px;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  transition: transform 0.2s, border-color 0.2s;
+}
+
+.search-card:hover {
+  transform: translateY(-2px);
+  border-color: #38bdf8;
+}
+
+.search-card img {
+  width: 100%;
+  height: 220px;
+  object-fit: cover;
+  background-color: #1e293b;
+}
+
+.search-card-body {
+  padding: 10px;
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  justify-content: space-between;
+}
+
+.search-card-body h4 {
+  font-size: 0.95rem;
+  margin-bottom: 4px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+       

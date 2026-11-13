@@ -17,16 +17,19 @@ public class UserService {
 
     @Transactional
     public User registerUser(String username, String email, String password) {
-        if (userRepository.existsByUsername(username)) {
-            throw new IllegalArgumentException("Username is already taken");
+        String cleanUsername = username != null ? username.trim() : "";
+        String cleanEmail = email != null ? email.trim().toLowerCase() : "";
+
+        if (userRepository.existsByUsername(cleanUsername)) {
+            throw new IllegalArgumentException("اسم المستخدم مأخوذ بالفعل، يرجى اختيار اسم آخر");
         }
-        if (userRepository.existsByEmail(email)) {
-            throw new IllegalArgumentException("Email is already registered");
+        if (userRepository.existsByEmail(cleanEmail)) {
+            throw new IllegalArgumentException("هذا البريد الإلكتروني مسجل بالفعل لمستخدم آخر");
         }
 
         User user = User.builder()
-                .username(username)
-                .email(email)
+                .username(cleanUsername)
+                .email(cleanEmail)
                 .password(password)
                 .role(Role.ROLE_USER)
                 .build();
