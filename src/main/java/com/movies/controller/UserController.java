@@ -44,4 +44,19 @@ public class UserController {
     public ResponseEntity<List<User>> getAllUsers() {
         return ResponseEntity.ok(userService.getAllUsers());
     }
+
+    @DeleteMapping("/{id}")
+    public ResponseEntity<Void> deleteUser(@PathVariable Long id) {
+        userService.deleteUser(id);
+        return ResponseEntity.noContent().build();
+    }
+
+    @PatchMapping("/{id}/role")
+    public ResponseEntity<User> updateUserRole(
+            @PathVariable Long id,
+            @RequestBody Map<String, String> body) {
+        String roleStr = body.get("role");
+        com.movies.entity.enums.Role newRole = com.movies.entity.enums.Role.valueOf(roleStr);
+        return ResponseEntity.ok(userService.updateUserRole(id, newRole));
+    }
 }

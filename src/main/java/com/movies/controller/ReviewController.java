@@ -68,9 +68,20 @@ public class ReviewController {
         return ResponseEntity.ok(reviewService.flagReview(reviewId));
     }
 
+    @PatchMapping("/{reviewId}/unflag")
+    public ResponseEntity<Review> unflagReview(@PathVariable Long reviewId) {
+        return ResponseEntity.ok(reviewService.unflagReview(reviewId));
+    }
+
     @PatchMapping("/{reviewId}/hide")
     public ResponseEntity<Review> hideReview(@PathVariable Long reviewId) {
         return ResponseEntity.ok(reviewService.hideReview(reviewId));
+    }
+
+    @DeleteMapping("/{reviewId}/admin")
+    public ResponseEntity<Void> adminDeleteReview(@PathVariable Long reviewId) {
+        reviewService.adminDeleteReview(reviewId);
+        return ResponseEntity.noContent().build();
     }
 
     @GetMapping("/flagged")

@@ -84,11 +84,28 @@ public class ReviewService {
     }
 
     @Transactional
+    public void adminDeleteReview(Long reviewId) {
+        Review review = reviewRepository.findById(reviewId)
+                .orElseThrow(() -> new IllegalArgumentException("Review not found"));
+        reviewRepository.delete(review);
+    }
+
+    @Transactional
     public Review flagReview(Long reviewId) {
         Review review = reviewRepository.findById(reviewId)
                 .orElseThrow(() -> new IllegalArgumentException("Review not found"));
 
         review.setIsFlagged(true);
+        return reviewRepository.save(review);
+    }
+
+    @Transactional
+    public Review unflagReview(Long reviewId) {
+        Review review = reviewRepository.findById(reviewId)
+                .orElseThrow(() -> new IllegalArgumentException("Review not found"));
+
+        review.setIsFlagged(false);
+        review.setIsHidden(false);
         return reviewRepository.save(review);
     }
 
