@@ -5,7 +5,8 @@ export default function WatchlistItemCard({
   item,
   onUpdateStatus,
   onRemove,
-  onOpenReview
+  onOpenReview,
+  onViewDetails
 }) {
   const posterUrl = item.posterPath
     ? (item.posterPath.startsWith('http') ? item.posterPath : `${TMDB_IMG}${item.posterPath}`)
@@ -13,7 +14,12 @@ export default function WatchlistItemCard({
 
   return (
     <div className="movie-poster-card">
-      <div className="poster-frame">
+      <div
+        className="poster-frame"
+        style={{ cursor: 'pointer' }}
+        onClick={() => onViewDetails && onViewDetails(item)}
+        title="Click to view story & trailer"
+      >
         <img
           src={posterUrl}
           alt={item.title}
@@ -43,12 +49,25 @@ export default function WatchlistItemCard({
             <option value="DROPPED">Dropped</option>
           </select>
 
-          <h4 className="movie-card-title" title={item.title}>
+          <h4
+            className="movie-card-title"
+            title={item.title}
+            style={{ cursor: 'pointer' }}
+            onClick={() => onViewDetails && onViewDetails(item)}
+          >
             {item.title}
           </h4>
         </div>
 
-        <div style={{ display: 'flex', gap: '8px', marginTop: '10px' }}>
+        <div style={{ display: 'flex', gap: '6px', marginTop: '10px' }}>
+          <button
+            type="button"
+            className="btn btn-outline-info btn-sm"
+            onClick={() => onViewDetails && onViewDetails(item)}
+            title="View story & trailer"
+          >
+            📖
+          </button>
           <button
             type="button"
             className="btn btn-secondary btn-sm"

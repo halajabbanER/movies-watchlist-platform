@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { TMDB_IMG } from '../../services/api';
+import MovieDetailsModal from './MovieDetailsModal';
 
 const POPULAR_SEARCHES = [
   'Inception',
@@ -24,6 +25,8 @@ export default function TmdbSearchTab({
   onAddMovie,
   onOpenReview
 }) {
+  const [selectedMovieForDetails, setSelectedMovieForDetails] = useState(null);
+
   const handleFormSubmit = (e) => {
     e.preventDefault();
     onSearch(e);
@@ -122,7 +125,12 @@ export default function TmdbSearchTab({
                 key={`${movie.mediaType}-${movie.tmdbId}`}
                 className="movie-poster-card"
               >
-                <div className="poster-frame">
+                <div
+                  className="poster-frame"
+                  style={{ cursor: 'pointer' }}
+                  onClick={() => setSelectedMovieForDetails(movie)}
+                  title="Click to view story & trailer"
+                >
                   <img
                     src={
                       movie.posterPath
@@ -152,22 +160,52 @@ export default function TmdbSearchTab({
 
                 <div className="card-details-body">
                   <div>
-                    <h4 className="movie-card-title" title={movie.title}>
+                    <h4
+                      className="movie-card-title"
+                      title={movie.title}
+                      style={{ cursor: 'pointer' }}
+                      onClick={() => setSelectedMovieForDetails(movie)}
+                    >
                       {movie.title}
                     </h4>
                     <div className="movie-card-meta">
                       {movie.releaseDate ? movie.releaseDate.substring(0, 4) : 'Unknown Year'} • ID: #{movie.tmdbId}
                     </div>
+                    {movie.overview && (
+                      <p
+                        style={{
+                          fontSize: '0.78rem',
+                          color: 'var(--text-muted)',
+                          display: '-webkit-box',
+                          WebkitLineClamp: 2,
+                          WebkitBoxOrient: 'vertical',
+                          overflow: 'hidden',
+                          marginBottom: '8px',
+                          lineHeight: 1.4
+                        }}
+                        title={movie.overview}
+                      >
+                        {movie.overview}
+                      </p>
+                    )}
                   </div>
 
                   <div
                     style={{
                       display: 'flex',
                       flexDirection: 'column',
-                      gap: '8px',
-                      marginTop: '10px'
+                      gap: '6px',
+                      marginTop: '6px'
                     }}
                   >
+                    <button
+                      type="button"
+                      className="btn btn-outline-info btn-sm"
+                      onClick={() => setSelectedMovieForDetails(movie)}
+                    >
+                      📖 Story & Trailer
+                    </button>
+
                     {watchlists.length > 0 ? (
                       <button
                         type="button"
@@ -201,6 +239,16 @@ export default function TmdbSearchTab({
             ))}
           </div>
         </div>
+      )}
+
+      {selectedMovieForDetails && (
+        <MovieDetailsModal
+          movie={selectedMovieForDetails}
+          onClose={() => setSelectedMovieForDetails(null)}
+          onAddMovie={onAddMovie}
+          onOpenReview={onOpenReview}
+          canAddToWatchlist={watchlists.length > 0}
+        />
       )}
     </div>
   );

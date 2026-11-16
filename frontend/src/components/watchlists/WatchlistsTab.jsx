@@ -1,6 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import WatchlistSidebar from './WatchlistSidebar';
 import WatchlistItemCard from './WatchlistItemCard';
+import MovieDetailsModal from '../tmdb/MovieDetailsModal';
 
 export default function WatchlistsTab({
   watchlists,
@@ -17,6 +18,7 @@ export default function WatchlistsTab({
 }) {
   const [statusFilter, setStatusFilter] = useState('ALL');
   const [itemSearchQuery, setItemSearchQuery] = useState('');
+  const [selectedItemForDetails, setSelectedItemForDetails] = useState(null);
 
   const displayedItems = useMemo(() => {
     return items.filter((item) => {
@@ -132,12 +134,22 @@ export default function WatchlistsTab({
                   onUpdateStatus={onUpdateItemStatus}
                   onRemove={onRemoveItem}
                   onOpenReview={onOpenReview}
+                  onViewDetails={(it) => setSelectedItemForDetails(it)}
                 />
               ))}
             </div>
           )}
         </div>
       </div>
+
+      {selectedItemForDetails && (
+        <MovieDetailsModal
+          movie={selectedItemForDetails}
+          onClose={() => setSelectedItemForDetails(null)}
+          onOpenReview={onOpenReview}
+          canAddToWatchlist={false}
+        />
+      )}
     </div>
   );
 }
