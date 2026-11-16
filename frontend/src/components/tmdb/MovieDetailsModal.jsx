@@ -11,13 +11,11 @@ export default function MovieDetailsModal({
   const [details, setDetails] = useState(null);
   const [mediaReviews, setMediaReviews] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [showTrailer, setShowTrailer] = useState(false);
 
   useEffect(() => {
     if (!movie) return;
     let isMounted = true;
     setLoading(true);
-    setShowTrailer(false);
 
     const type = movie.mediaType || 'MOVIE';
     const id = movie.tmdbId;
@@ -193,17 +191,6 @@ export default function MovieDetailsModal({
 
               {/* Action Buttons Bar */}
               <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
-                {info.trailerKey && (
-                  <button
-                    type="button"
-                    className="btn btn-danger btn-sm d-flex align-items-center gap-2"
-                    onClick={() => setShowTrailer(!showTrailer)}
-                  >
-                    <i className={showTrailer ? 'bi bi-stop-circle-fill' : 'bi bi-play-circle-fill'}></i>
-                    <span>{showTrailer ? 'Hide Trailer' : 'Watch Official Trailer (YouTube)'}</span>
-                  </button>
-                )}
-
                 {canAddToWatchlist && onAddMovie && (
                   <button
                     type="button"
@@ -229,36 +216,6 @@ export default function MovieDetailsModal({
                   </button>
                 )}
               </div>
-
-              {/* Embedded YouTube Trailer Player */}
-              {showTrailer && info.trailerKey && (
-                <div
-                  style={{
-                    position: 'relative',
-                    paddingBottom: '56.25%',
-                    height: 0,
-                    overflow: 'hidden',
-                    borderRadius: 'var(--radius-md)',
-                    border: '1px solid var(--border-subtle)',
-                    background: '#000'
-                  }}
-                >
-                  <iframe
-                    src={`https://www.youtube.com/embed/${info.trailerKey}?autoplay=1`}
-                    title={`${info.title} Official Trailer`}
-                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                    allowFullScreen
-                    style={{
-                      position: 'absolute',
-                      top: 0,
-                      left: 0,
-                      width: '100%',
-                      height: '100%',
-                      border: 0
-                    }}
-                  />
-                </div>
-              )}
 
               {/* Community Reviews for this Title */}
               <div>
@@ -305,3 +262,4 @@ export default function MovieDetailsModal({
     </div>
   );
 }
+

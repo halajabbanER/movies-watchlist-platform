@@ -203,7 +203,7 @@ export default function TmdbSearchTab({
                       className="btn btn-outline-info btn-sm"
                       onClick={() => setSelectedMovieForDetails(movie)}
                     >
-                      📖 Story & Trailer
+                      📖 Story & Details
                     </button>
 
                     {watchlists.length > 0 ? (
