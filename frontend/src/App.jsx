@@ -157,21 +157,26 @@ export default function App() {
   };
 
   const handleUpdateItemStatus = async (itemId, newStatus) => {
+    const previousItems = [...items];
     // Optimistic UI update: change status instantly on screen
     setItems((prev) =>
       prev.map((it) => (it.id === itemId ? { ...it, status: newStatus } : it))
     );
-    notify(`Status updated to: ${newStatus.replace(/_/g, ' ')} ✅`);
 
     // Persist to backend database
     try {
-      await apiRequest(`${API_BASE}/watchlist-items/${itemId}/status`, {
+      const updated = await apiRequest(`${API_BASE}/watchlist-items/${itemId}/status`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ userId: Number(userId), status: newStatus })
       });
+      setItems((prev) =>
+        prev.map((it) => (it.id === itemId ? { ...it, status: updated.status || newStatus } : it))
+      );
+      notify(`Status updated to: ${newStatus.replace(/_/g, ' ')} ✅`);
     } catch (err) {
-      console.warn('Could not persist status to backend:', err.message);
+      setItems(previousItems);
+      notify(err.message, true);
     }
   };
 

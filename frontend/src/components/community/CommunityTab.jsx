@@ -392,7 +392,8 @@ export default function CommunityTab({
                       </button>
                       <button
                         type="button"
-                        className="btn btn-outline-warning btn-sm d-flex align-items-center gap-1 text-dark"
+                        className="btn btn-outline-warning btn-sm d-flex align-items-center gap-1"
+                        style={{ color: 'var(--text-main)' }}
                         onClick={() => handleOpenUserProfile(target, 'reviews')}
                         title="View their reviews"
                       >

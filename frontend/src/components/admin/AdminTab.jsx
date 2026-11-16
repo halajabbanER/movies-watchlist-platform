@@ -1,7 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { API_BASE, apiRequest } from '../../services/api';
+import { useAuth } from '../../context/AuthContext';
 
 export default function AdminTab({ notify }) {
+  const { currentUser } = useAuth();
   const [adminSubTab, setAdminSubTab] = useState('users'); // 'users' | 'moderation' | 'system'
   const [users, setUsers] = useState([]);
   const [flaggedReviews, setFlaggedReviews] = useState([]);
@@ -276,30 +278,36 @@ export default function AdminTab({ notify }) {
                         {u.createdAt ? new Date(u.createdAt).toLocaleDateString() : 'N/A'}
                       </td>
                       <td style={{ textAlign: 'right' }}>
-                        <div style={{ display: 'inline-flex', gap: '8px' }}>
-                          <button
-                            type="button"
-                            className="btn btn-outline-secondary btn-sm d-flex align-items-center gap-1"
-                            onClick={() => handleToggleUserRole(u)}
-                            title={
-                              u.role === 'ROLE_ADMIN'
-                                ? 'Demote to regular user'
-                                : 'Promote to administrator'
-                            }
-                          >
-                            <i className={u.role === 'ROLE_ADMIN' ? 'bi bi-person-dash' : 'bi bi-shield-plus'}></i>
-                            <span>{u.role === 'ROLE_ADMIN' ? 'Demote' : 'Promote Admin'}</span>
-                          </button>
-                          <button
-                            type="button"
-                            className="btn btn-outline-danger btn-sm d-flex align-items-center gap-1"
-                            onClick={() => handleDeleteUser(u)}
-                            title="Delete this user"
-                          >
-                            <i className="bi bi-trash3-fill"></i>
-                            <span>Delete</span>
-                          </button>
-                        </div>
+                        {u.id === currentUser?.id ? (
+                          <span className="badge-pill" style={{ background: 'var(--bg-surface-elevated)', color: 'var(--text-muted)', border: '1px solid var(--border-subtle)', fontSize: '0.78rem' }}>
+                            Current Session
+                          </span>
+                        ) : (
+                          <div style={{ display: 'inline-flex', gap: '8px' }}>
+                            <button
+                              type="button"
+                              className="btn btn-outline-secondary btn-sm d-flex align-items-center gap-1"
+                              onClick={() => handleToggleUserRole(u)}
+                              title={
+                                u.role === 'ROLE_ADMIN'
+                                  ? 'Demote to regular user'
+                                  : 'Promote to administrator'
+                              }
+                            >
+                              <i className={u.role === 'ROLE_ADMIN' ? 'bi bi-person-dash' : 'bi bi-shield-plus'}></i>
+                              <span>{u.role === 'ROLE_ADMIN' ? 'Demote' : 'Promote Admin'}</span>
+                            </button>
+                            <button
+                              type="button"
+                              className="btn btn-outline-danger btn-sm d-flex align-items-center gap-1"
+                              onClick={() => handleDeleteUser(u)}
+                              title="Delete this user"
+                            >
+                              <i className="bi bi-trash3-fill"></i>
+                              <span>Delete</span>
+                            </button>
+                          </div>
+                        )}
                       </td>
                     </tr>
                   ))

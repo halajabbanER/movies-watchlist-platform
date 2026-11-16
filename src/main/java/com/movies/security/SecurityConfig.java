@@ -55,6 +55,9 @@ public class SecurityConfig {
                         .requestMatchers("/", "/app/**", "/index.html", "/assets/**", "/favicon.ico", "/api/v1/health").permitAll()
                         .requestMatchers("/api/users/register", "/api/users/login").permitAll()
                         .requestMatchers("/api/tmdb/**").permitAll()
+                        .requestMatchers("/api/reviews/flagged", "/api/reviews/*/unflag", "/api/reviews/*/hide", "/api/reviews/*/admin").hasRole("ADMIN")
+                        .requestMatchers(HttpMethod.DELETE, "/api/users/**").hasRole("ADMIN")
+                        .requestMatchers(HttpMethod.PATCH, "/api/users/*/role").hasRole("ADMIN")
                         .requestMatchers(HttpMethod.GET, "/api/watchlists/**", "/api/watchlist-items/**", "/api/reviews/**", "/api/follows/**").permitAll()
                         .anyRequest().authenticated())
                 .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class);
