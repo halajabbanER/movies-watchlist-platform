@@ -1,6 +1,7 @@
 services:
   app:
     image: maven:3.9.11-eclipse-temurin-21
+    restart: unless-stopped
     working_dir: /workspace/${COMPOSE_PROJECT_NAME:-movies-watchlist-platform}
     command: mvn spring-boot:run
     environment:
@@ -21,6 +22,7 @@ services:
 
   mysql:
     image: mysql:8.4
+    restart: unless-stopped
     environment:
       MYSQL_DATABASE: movies
       MYSQL_USER: movies

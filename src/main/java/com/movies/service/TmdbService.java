@@ -1,4 +1,4 @@
-package com.movies.service;
+﻿package com.movies.service;
 
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
@@ -51,7 +51,8 @@ public class TmdbService {
                 dto.put("tmdbId", item.get("id"));
                 dto.put("mediaType", mediaType.toUpperCase());
                 dto.put("title", "movie".equals(mediaType) ? item.get("title") : item.get("name"));
-                dto.put("releaseDate", "movie".equals(mediaType) ? item.get("release_date") : item.get("first_air_date"));
+                dto.put("releaseDate",
+                        "movie".equals(mediaType) ? item.get("release_date") : item.get("first_air_date"));
                 dto.put("posterPath", item.get("poster_path"));
                 dto.put("overview", item.get("overview"));
                 dto.put("voteAverage", item.get("vote_average"));

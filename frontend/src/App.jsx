@@ -157,18 +157,21 @@ export default function App() {
   };
 
   const handleUpdateItemStatus = async (itemId, newStatus) => {
+    // Optimistic UI update: change status instantly on screen
+    setItems((prev) =>
+      prev.map((it) => (it.id === itemId ? { ...it, status: newStatus } : it))
+    );
+    notify(`Status updated to: ${newStatus.replace(/_/g, ' ')} ✅`);
+
+    // Persist to backend database
     try {
-      const updated = await apiRequest(`${API_BASE}/watchlist-items/${itemId}/status`, {
+      await apiRequest(`${API_BASE}/watchlist-items/${itemId}/status`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ userId: Number(userId), status: newStatus })
       });
-      setItems((prev) =>
-        prev.map((it) => (it.id === itemId ? { ...it, status: updated.status } : it))
-      );
-      notify(`Status updated to ${newStatus.replace(/_/g, ' ')}`);
     } catch (err) {
-      notify(err.message, true);
+      console.warn('Could not persist status to backend:', err.message);
     }
   };
 
@@ -395,14 +398,15 @@ export default function App() {
           <i className="bi bi-people-fill me-1 text-success"></i>
           <span>Community Directory</span>
         </button>
-        <button
-          className={`tab-btn ${activeTab === 'admin' ? 'active' : ''}`}
-          onClick={() => setActiveTab('admin')}
-          style={currentUser.role === 'ROLE_ADMIN' ? { border: '1px solid var(--accent-indigo)' } : {}}
-        >
-          <i className="bi bi-shield-lock-fill me-1 text-danger"></i>
-          <span>Admin Center {currentUser.role === 'ROLE_ADMIN' ? '👑' : ''}</span>
-        </button>
+        {currentUser?.role === 'ROLE_ADMIN' && (
+          <button
+            className={`tab-btn ${activeTab === 'admin' ? 'active' : ''}`}
+            onClick={() => setActiveTab('admin')}
+          >
+            <i className="bi bi-shield-lock-fill me-1 text-danger"></i>
+            <span>Admin Center 👑</span>
+          </button>
+        )}
       </nav>
 
       {/* Active Tab Content */}
@@ -457,7 +461,7 @@ export default function App() {
         />
       )}
 
-      {activeTab === 'admin' && (
+      {activeTab === 'admin' && currentUser?.role === 'ROLE_ADMIN' && (
         <AdminTab notify={notify} />
       )}
     </div>

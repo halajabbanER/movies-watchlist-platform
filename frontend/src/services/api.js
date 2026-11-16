@@ -1,7 +1,7 @@
 export const API_BASE = 'http://localhost:8080/api';
 export const TMDB_IMG = 'https://image.tmdb.org/t/p/w500';
 
-export async function apiRequest(url, options = {}) {
+export async function apiRequest(url, options = {}, retries = 1) {
   try {
     const token = localStorage.getItem('token');
     const headers = { ...options.headers };
@@ -34,9 +34,12 @@ export async function apiRequest(url, options = {}) {
     return data;
   } catch (err) {
     if (err.name === 'TypeError' && err.message.toLowerCase().includes('fetch')) {
+      if (retries > 0) {
+        await new Promise((resolve) => setTimeout(resolve, 1200));
+        return apiRequest(url, options, retries - 1);
+      }
       throw new Error('فشل الاتصال بالسيرفر: تأكد من تشغيل خادم Backend على http://localhost:8080');
     }
     throw err;
   }
 }
-

@@ -116,13 +116,13 @@ export default function CommunityTab({
     followingList.map((f) => Number(f.following?.id || f.following || f.followingId))
   );
 
-  // Filtered lists
-  const filteredUsers = allUsers.filter((u) => {
+  // Filtered lists (exclude admin accounts for privacy & security)
+  const publicMembers = allUsers.filter((u) => u.role !== 'ROLE_ADMIN');
+  const filteredUsers = publicMembers.filter((u) => {
     const q = searchMemberQuery.trim().toLowerCase();
     if (!q) return true;
     return (
       (u.username && u.username.toLowerCase().includes(q)) ||
-      (u.email && u.email.toLowerCase().includes(q)) ||
       String(u.id) === q
     );
   });
@@ -193,7 +193,7 @@ export default function CommunityTab({
               onClick={() => setCommunityTab('all')}
             >
               <i className="bi bi-person-lines-fill me-1"></i>
-              <span>All Cinephiles ({allUsers.length})</span>
+              <span>All Cinephiles ({publicMembers.length})</span>
             </button>
             <button
               className={`admin-subtab-btn ${communityTab === 'following' ? 'active' : ''}`}
@@ -215,7 +215,7 @@ export default function CommunityTab({
             <div style={{ position: 'relative', maxWidth: '300px', width: '100%' }}>
               <input
                 type="text"
-                placeholder="Search cinephile by name or email..."
+                placeholder="Search cinephile by username..."
                 value={searchMemberQuery}
                 onChange={(e) => setSearchMemberQuery(e.target.value)}
                 style={{ marginBottom: 0 }}
@@ -262,15 +262,6 @@ export default function CommunityTab({
                                 YOU
                               </span>
                             )}
-                            {user.role === 'ROLE_ADMIN' && (
-                              <span className="badge-pill badge-tv" style={{ fontSize: '0.68rem', padding: '1px 6px' }}>
-                                👑 ADMIN
-                              </span>
-                            )}
-                          </div>
-
-                          <div className="member-email" title={user.email}>
-                            {user.email || 'No public email'}
                           </div>
 
                           <div className="member-joined-tag" style={{ marginTop: '4px' }}>
@@ -379,20 +370,10 @@ export default function CommunityTab({
                           <strong style={{ fontSize: '1.05rem', color: 'var(--text-main)' }}>
                             {target.username}
                           </strong>
-                          {target.role === 'ROLE_ADMIN' && (
-                            <span className="badge-pill badge-tv" style={{ fontSize: '0.68rem', padding: '1px 6px' }}>
-                              👑 ADMIN
-                            </span>
-                          )}
                           <span style={{ fontSize: '0.78rem', color: 'var(--text-faint)' }}>
                             #{target.id}
                           </span>
                         </div>
-                        {target.email && (
-                          <div style={{ fontSize: '0.82rem', color: 'var(--text-muted)' }}>
-                            {target.email}
-                          </div>
-                        )}
                         <div style={{ fontSize: '0.75rem', color: 'var(--text-faint)', marginTop: '2px' }}>
                           Connected since: {target.followCreatedAt ? new Date(target.followCreatedAt).toLocaleDateString() : 'Recently'}
                         </div>
@@ -570,14 +551,9 @@ export default function CommunityTab({
                     <h3 style={{ fontSize: '1.35rem', fontWeight: 800, margin: 0, color: 'var(--text-main)' }}>
                       {profileModalUser.username}
                     </h3>
-                    {profileModalUser.role === 'ROLE_ADMIN' && (
-                      <span className="badge-pill badge-tv" style={{ fontSize: '0.7rem' }}>
-                        👑 ADMIN
-                      </span>
-                    )}
                   </div>
                   <div style={{ fontSize: '0.84rem', color: 'var(--text-muted)' }}>
-                    {profileModalUser.email || `Member ID #${profileModalUser.id}`}
+                    CineTrack Member #{profileModalUser.id}
                   </div>
                   <div style={{ fontSize: '0.78rem', color: 'var(--text-faint)', marginTop: '2px' }}>
                     <strong>{userFollowStats.followersCount || 0}</strong> Followers • <strong>{userFollowStats.followingCount || 0}</strong> Following
