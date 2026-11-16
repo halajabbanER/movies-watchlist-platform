@@ -2,6 +2,7 @@ package com.movies.service;
 
 import com.movies.entity.User;
 import com.movies.entity.enums.Role;
+import com.movies.repository.FollowRepository;
 import com.movies.repository.UserRepository;
 import com.movies.security.JwtUtil;
 import lombok.RequiredArgsConstructor;
@@ -18,6 +19,7 @@ import java.util.Map;
 public class UserService {
 
     private final UserRepository userRepository;
+    private final FollowRepository followRepository;
     private final PasswordEncoder passwordEncoder;
     private final JwtUtil jwtUtil;
 
@@ -88,10 +90,11 @@ public class UserService {
 
     @Transactional
     public void deleteUser(Long id) {
-        if (!userRepository.existsById(id)) {
-            throw new IllegalArgumentException("User not found");
-        }
-        userRepository.deleteById(id);
+        User user = userRepository.findById(id)
+                .orElseThrow(() -> new IllegalArgumentException("User not found"));
+        followRepository.deleteByFollowerId(id);
+        followRepository.deleteByFollowingId(id);
+        userRepository.delete(user);
     }
 
     @Transactional

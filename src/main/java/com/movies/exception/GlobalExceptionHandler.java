@@ -29,6 +29,8 @@ public class GlobalExceptionHandler {
             } else {
                 message = "This username is already taken. Please choose another username.";
             }
+        } else if (rawMsg.toLowerCase().contains("foreign key constraint") || rawMsg.toLowerCase().contains("cannot delete")) {
+            message = "Cannot delete or update this record because it is linked to existing data.";
         }
 
         body.put("message", message);
