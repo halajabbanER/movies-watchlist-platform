@@ -1,4 +1,4 @@
-﻿package com.movies.service;
+package com.movies.service;
 
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
